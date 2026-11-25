@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แอดมิน: หยิบ-แพ็ค-จ่าหน้า</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{font-family:"Noto Sans Thai",sans-serif;margin:0;padding:20px;color:#2B1A08}
+h1,h2{margin:0 0 10px}
+table{border-collapse:collapse;width:100%;margin-bottom:24px}
+th,td{border:1px solid #2B1A08;padding:8px;text-align:left}
+th{background:#FFF1C9}
+button{padding:10px 18px;font:600 16px "Noto Sans Thai";background:#2B1A08;color:#fff;border:0;border-radius:6px;cursor:pointer;margin-right:8px}
+.labels{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
+.label{border:2px dashed #2B1A08;padding:14px;break-inside:avoid;page-break-inside:avoid}
+.label .to{font-size:20px;font-weight:600}
+.label small{display:block;color:#555}
+.zip{font-size:28px;font-weight:600;letter-spacing:4px}
+@media print{.noprint{display:none}body{padding:0}.labels{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="noprint">
+  <h1>หยิบ-แพ็ค-จ่าหน้าพัสดุ</h1>
+  <button id="load">โหลดออเดอร์ใหม่ (NEW)</button>
+  <button onclick="window.print()">พิมพ์</button>
+  <p id="st"></p>
+</div>
+<h2>1) รายการหยิบสินค้ารวม</h2>
+<table id="pick"></table>
+<h2>2) รายการแพ็คต่อออเดอร์</h2>
+<table id="pack"></table>
+<h2>3) ใบจ่าหน้าพัสดุ</h2>
+<div class="labels" id="labels"></div>
+
+<script src="config.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+$("#load").onclick = async () => {
+  $("#st").textContent = "กำลังโหลด…";
+  try {
+    const r = await fetch(CONFIG.API_URL + "?key=" + encodeURIComponent(CONFIG.ADMIN_KEY));
+    const j = await r.json(); if (!j.ok) throw new Error(j.error);
+    draw(j.rows.filter(x => x.Status === "NEW"));
+    $("#st").textContent = "โหลดแล้ว";
+  } catch (e) { $("#st").textContent = "ผิดพลาด: " + e.message; }
+};
+function draw(rows) {
+  // 1) รวมจำนวนต่อ SKU
+  const sum = {};
+  rows.forEach(r => { const k = r.SKU; sum[k] = sum[k] || { name: r.Product, qty: 0 }; sum[k].qty += Number(r.Qty); });
+  $("#pick").innerHTML = "<tr><th>SKU</th><th>สินค้า</th><th>จำนวนที่ต้องหยิบ</th></tr>" +
+    Object.entries(sum).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v.name)}</td><td>${v.qty}</td></tr>`).join("");
+  // 2) จัดกลุ่มตามออเดอร์
+  const orders = {};
+  rows.forEach(r => (orders[r.OrderID] = orders[r.OrderID] || []).push(r));
+  $("#pack").innerHTML = "<tr><th>ออเดอร์</th><th>ลูกค้า</th><th>สินค้าที่ต้องใส่กล่อง</th><th>ตรวจแล้ว</th></tr>" +
+    Object.entries(orders).map(([id, L]) => `<tr><td>${esc(id)}</td><td>${esc(L[0].Name)}</td>
+      <td>${L.map(x => esc(x.Product) + " × " + x.Qty).join("<br>")}</td><td>☐</td></tr>`).join("");
+  // 3) ใบจ่าหน้า
+  const S = CONFIG.SENDER;
+  $("#labels").innerHTML = Object.entries(orders).map(([id, L]) => { const c = L[0]; return `
+    <div class="label">
+      <small>ผู้ส่ง: ${esc(S.name)} โทร ${esc(S.phone)}<br>${esc(S.address)}</small><hr>
+      <div class="to">ผู้รับ: ${esc(c.Name)} โทร ${esc(c.Phone)}</div>
+      <div>${esc(c.Address)} ต.${esc(c.Subdistrict)} อ.${esc(c.District)}<br>จ.${esc(c.Province)}</div>
+      <div class="zip">${esc(c.Zip)}</div>
+      <small>ออเดอร์ ${esc(id)} · ${L.map(x => esc(x.SKU) + "×" + x.Qty).join(", ")}${c.Note ? "<br>หมายเหตุ: " + esc(c.Note) : ""}</small>
+    </div>`; }).join("");
+}
+</script>
+</body>
+</html>

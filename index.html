@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>น้ำผึ้งแท้ ส่งตรงจากสวน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600&family=Noto+Serif+Thai:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--amber:#E8A317;--brown:#2B1A08;--green:#14301F;--white:#fff;--soft:#FFF1C9}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans Thai",sans-serif;color:var(--brown);line-height:1.7}
+h1,h2,h3{font-family:"Noto Serif Thai",serif;line-height:1.2;margin:0}
+.hero{background:var(--amber);padding:64px 20px 72px;position:relative;overflow:hidden}
+.hero-in{max-width:1000px;margin:auto;display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:center}
+.hero h1{font-size:clamp(40px,7vw,84px);font-weight:900}
+.hero p{font-size:18px;max-width:34ch}
+.btn{display:inline-block;background:var(--brown);color:var(--white);padding:14px 28px;border:0;border-radius:6px;font:600 17px "Noto Sans Thai";cursor:pointer;text-decoration:none}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.comb{width:100%;max-width:360px;justify-self:center}
+section{padding:56px 20px}
+.wrap{max-width:1000px;margin:auto}
+.products{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px;margin-top:24px}
+.prod img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.prod h3{font-size:24px;margin:14px 0 4px}
+.price{font-weight:600;font-size:20px}
+.qty{display:flex;align-items:center;gap:10px;margin-top:10px}
+.qty button{width:40px;height:40px;border:2px solid var(--brown);background:none;font-size:20px;border-radius:6px;cursor:pointer}
+.qty output{min-width:28px;text-align:center;font-weight:600;font-size:18px}
+.order{background:var(--green);color:var(--white)}
+.order h2{color:var(--soft)}
+form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+label{display:flex;flex-direction:column;font-size:14px;gap:4px}
+.full{grid-column:1/-1}
+input,textarea{padding:12px;border-radius:6px;border:0;font:16px "Noto Sans Thai"}
+.summary{background:var(--soft);color:var(--brown);padding:16px;border-radius:6px}
+#msg{margin-top:12px;font-weight:600}
+footer{padding:24px;text-align:center;font-size:14px}
+@media(max-width:700px){.hero-in,form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <div>
+      <h1>น้ำผึ้งแท้<br>ไม่ผสมน้ำเชื่อม</h1>
+      <p>เก็บจากรังผึ้งในสวน บรรจุขวดเอง ส่งถึงบ้านทั่วไทย</p>
+      <a class="btn" href="#order">สั่งซื้อเลย</a>
+    </div>
+    <svg class="comb" viewBox="0 0 200 200" aria-hidden="true">
+      <g fill="#2B1A08"><polygon points="100,10 140,33 140,79 100,102 60,79 60,33"/>
+      <polygon points="60,79 100,102 100,148 60,171 20,148 20,102" fill="#14301F"/>
+      <polygon points="140,79 180,102 180,148 140,171 100,148 100,102" fill="#FFF1C9"/></g>
+    </svg>
+  </div>
+</header>
+
+<section><div class="wrap">
+  <h2>เลือกน้ำผึ้งของคุณ</h2>
+  <div class="products" id="products"></div>
+</div></section>
+
+<section class="order" id="order"><div class="wrap">
+  <h2>ที่อยู่จัดส่ง</h2>
+  <form id="f">
+    <label>ชื่อ-นามสกุล<input name="name" required autocomplete="name"></label>
+    <label>เบอร์โทร<input name="phone" required pattern="0[0-9]{8,9}" inputmode="tel" autocomplete="tel" title="เบอร์ 9-10 หลัก ขึ้นต้นด้วย 0"></label>
+    <label class="full">ที่อยู่ (บ้านเลขที่ ซอย ถนน)<input name="address" required autocomplete="street-address"></label>
+    <label>ตำบล/แขวง<input name="subdistrict" required></label>
+    <label>อำเภอ/เขต<input name="district" required></label>
+    <label>จังหวัด<input name="province" required></label>
+    <label>รหัสไปรษณีย์<input name="zip" required pattern="[0-9]{5}" inputmode="numeric"></label>
+    <label class="full">หมายเหตุ (ถ้ามี)<textarea name="note" rows="2"></textarea></label>
+    <div class="summary full" id="summary">ยังไม่ได้เลือกสินค้า</div>
+    <button class="btn full" style="background:var(--amber);color:var(--brown)" id="submit">ยืนยันคำสั่งซื้อ</button>
+  </form>
+  <div id="msg" role="status"></div>
+</div></section>
+<footer>ติดต่อร้าน: <span id="ph"></span></footer>
+
+<script src="config.js"></script>
+<script>
+const cart = {};
+const $ = s => document.querySelector(s);
+$("#ph").textContent = CONFIG.SENDER.phone;
+$("#products").innerHTML = CONFIG.PRODUCTS.map(p => `
+  <article class="prod">
+    <img src="${p.image}" alt="${p.name} ${p.size}">
+    <h3>${p.name}</h3><div>${p.size} · ${p.desc}</div>
+    <div class="price">${p.price} บาท</div>
+    <div class="qty">
+      <button type="button" aria-label="ลด" data-s="${p.sku}" data-d="-1">−</button>
+      <output id="q-${p.sku}">0</output>
+      <button type="button" aria-label="เพิ่ม" data-s="${p.sku}" data-d="1">+</button>
+    </div>
+  </article>`).join("");
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-s]"); if (!b) return;
+  const s = b.dataset.s;
+  cart[s] = Math.max(0, (cart[s] || 0) + Number(b.dataset.d));
+  document.getElementById("q-" + s).textContent = cart[s];
+  render();
+});
+
+function items() {
+  return CONFIG.PRODUCTS.filter(p => cart[p.sku] > 0).map(p => ({ sku: p.sku, name: p.name + " " + p.size, price: p.price, qty: cart[p.sku] }));
+}
+function render() {
+  const it = items(), total = it.reduce((a, i) => a + i.qty * i.price, 0);
+  $("#summary").innerHTML = it.length
+    ? it.map(i => `${i.name} × ${i.qty} = ${i.qty * i.price} บาท`).join("<br>") + `<br><strong>รวม ${total} บาท</strong>`
+    : "ยังไม่ได้เลือกสินค้า";
+}
+
+$("#f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const it = items(), msg = $("#msg");
+  if (!it.length) { msg.textContent = "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ"; return; }
+  const data = Object.fromEntries(new FormData(e.target)); data.items = it;
+  $("#submit").disabled = true; msg.textContent = "กำลังส่งคำสั่งซื้อ…";
+  try {
+    // ใช้ text/plain เพื่อเลี่ยง CORS preflight ของ Apps Script
+    const r = await fetch(CONFIG.API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    msg.textContent = "สั่งซื้อสำเร็จ เลขที่ออเดอร์ " + j.orderId;
+    e.target.reset(); Object.keys(cart).forEach(k => { cart[k] = 0; document.getElementById("q-" + k).textContent = 0; }); render();
+  } catch (err) { msg.textContent = "ส่งไม่สำเร็จ: " + err.message + " กรุณาลองใหม่"; }
+  $("#submit").disabled = false;
+});
+</script>
+</body>
+</html>
